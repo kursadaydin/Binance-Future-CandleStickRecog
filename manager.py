@@ -8,6 +8,10 @@ from candle_rankings import candle_rankings
 import talib
 from itertools import compress
 
+from plotly.offline import plot
+import plotly.graph_objs as go
+
+
 
 
 class BinanceManager:
@@ -21,7 +25,7 @@ class BinanceManager:
     def getData(self,pair=constants.COIN_PAIR):
         self.client = Client(api_key=self.bin_key, api_secret= self.bin_secret)
         #datas = self.client.get_historical_klines(pair, constants.TIME_INTERVAL, "1 Jan, 2023")
-        datas = self.client.futures_historical_klines(pair, constants.TIME_INTERVAL,"1 Jan 2023")
+        datas = self.client.futures_historical_klines(pair, constants.TIME_INTERVAL,constants.START_DAY)
         my_df = pd.DataFrame(datas)
         my_df.columns  = ['open_time','open','high','low','close','volume','close_time','qav','num_trades','taker_base_trade_volume','taker_quote_vol','ignore']
         #my_df = my_df.iloc[:,0:6]
@@ -43,6 +47,8 @@ class BinanceManager:
 
 
 class CandlestickRecognizer:
+    date =[]
+    name =[]
     open =[]
     high =[]
     low =[]
@@ -55,7 +61,8 @@ class CandlestickRecognizer:
         1st - Best Performance candlestick pattern matched by www.thepatternsite.com
         2nd - # of matched patterns
         """
-
+        self.date = df['date']
+        self.name = df['name']
         self.open = df['open'].astype(float)
         self.high = df['high'].astype(float)
         self.low = df['low'].astype(float)
@@ -118,11 +125,23 @@ class CandlestickRecognizer:
             # clean up candle columns
             cols_to_drop = candle_names + list(exclude_items)
             df.drop(cols_to_drop, axis = 1, inplace = True)
+            
         except:
             pass
-
+        #df = df[['date','name','close','candlestick_pattern','candlestick_match_count']]
+        df = df[['date','name','close','candlestick_pattern']]
         return df
 
+    def getVisulation(self,df):
+        fname ="results/{}.html"
+        fname = fname.format(self.name[0])
+        o = df['open'].astype(float)
+        h = df['high'].astype(float)
+        l = df['low'].astype(float)
+        c = df['close'].astype(float)
 
+        trace = go.Candlestick(open=o, high=h, low=l, close=c)
+        data = [trace]
+        plot(data, filename=fname)
 
 
